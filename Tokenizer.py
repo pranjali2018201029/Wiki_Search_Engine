@@ -1,10 +1,10 @@
 from nltk.tokenize import word_tokenize
 from nltk.tokenize import RegexpTokenizer
-from nltk.corpus import stopwords
-stop_words = set(stopwords.words('english'))
 
+## Tokenizer by using only space as delimiter so punctuations are removed
 tokenizer = RegexpTokenizer(r'\w+')
 
+## Class object will store field wise tokens for one WikiPage
 class TokenObject():
 
     def __init__(self):
@@ -15,8 +15,10 @@ class TokenObject():
         self.ref = []
         self.body = []
 
+## Input : Filtered parsed data file
 def word_tokenizer(IPFilePath):
 
+    ## List of tokenobjects <--> List of pages
     TokenPages = []
     Tokenobj = TokenObject()
 
@@ -34,24 +36,13 @@ def word_tokenizer(IPFilePath):
     with open(IPFilePath, 'r') as f:
 
         for line in f:
-            # print("LINE: "+line)
+
             if line.startswith("Title Content: "):
+                ## If line is title line
 
                 if len(Tokenobj.title) != 0:
-
-                    # print("NewPage")
-
-                    # print("InfoboxText: "+InfoboxText)
-                    # print("CategoryText: "+CategoryText)
-                    # print("LinksText: "+LinksText)
-                    # print("RefText: "+RefText)
-                    # print("BodyText: "+BodyText)
-
-                    # Tokenobj.infobox = word_tokenize(InfoboxText)
-                    # Tokenobj.category = word_tokenize(CategoryText)
-                    # Tokenobj.links = word_tokenize(LinksText)
-                    # Tokenobj.ref = word_tokenize(RefText)
-                    # Tokenobj.body = word_tokenize(BodyText)
+                    ## If this is not first page, Tokenobj is not empty
+                    ## Tokenize each field content for previous page
 
                     Tokenobj.infobox = tokenizer.tokenize(InfoboxText)
                     Tokenobj.category = tokenizer.tokenize(CategoryText)
@@ -72,9 +63,12 @@ def word_tokenizer(IPFilePath):
                     print("BODY TOKENS")
                     print(Tokenobj.body)
 
+                    ## Append previous page obj to objlist
+                    ## and Create new empty object for new page
                     TokenPages.append(Tokenobj)
                     Tokenobj = TokenObject()
 
+                    ## Initialize all variables and flags for new page
                     InfoboxText = ""
                     CategoryText = ""
                     LinksText = ""
@@ -86,72 +80,69 @@ def word_tokenizer(IPFilePath):
                     LinksFlag = False
                     RefFlag = False
 
+
+                ## Continue reading next line after processing for this title line
                 Tokenobj.title = word_tokenize(line[15:])
                 continue
 
             elif line.startswith("Text Content: "):
-                # print("TextContent")
+                ## If line is part of text content of page
                 line = line[14:]
 
             else :
-                # print("Pass")
                 pass
 
-            if InfoboxFlag or line.startswith("{{Infobox"):
-                # print("Inside Infobox")
+            if LinksFlag or "==External" in line:
+                ## External links : *{{}} or *[] or *
+                if not LinksFlag:
+                    LinksFlag = True
+                elif (not line.startswith("*{{")) and (not line.startswith("*[")):
+                    LinksFlag = False
+                else:
+                    LinksText = LinksText + line
+
+            if RefFlag or "References" in line:
+                if not RefFlag:
+                    ## References starts
+                    RefFlag = True
+                else:
+                    ## References are represented in multiple formats (Not-uniform)
+                    ## References ends when External links or Category field starts
+                    if ("External links" in line) or (line.startswith("[[Category:")):
+                        RefFlag = False
+                        continue
+                    RefText = RefText + line
+
+            elif InfoboxFlag or line.startswith("{{Infobox"):
                 if not InfoboxFlag:
+                    ## Infobox content started
                     InfoboxFlag = True
                     line = line[9:]
                 if InfoboxFlag and line.startswith("}}"):
+                    ## Infobox content ends
                     InfoboxFlag = False
-                    # line = line[:-2]
+                ## Append all content inside infobox
+                ## which will be tokenize once title of next page is read
                 InfoboxText = InfoboxText + line
 
             elif CategoryFlag or line.startswith("[[Category:"):
-                # print("Inside Cayegory")
+                ## Category field is list of [[Category:text]] entries
                 if line.startswith("[[Category:"):
+                    ## Category entry starts
                     line = line[11:]
                     CategoryFlag = True
                 if CategoryFlag and line.endswith("]]"):
+                    ## Category entry ends
                     CategoryFlag = False
                     line = line[:-2]
                 CategoryText = CategoryText + line
 
-            elif RefFlag or "References" in line:
-                # print("Inside References")
-                if not RefFlag:
-                    RefFlag = True
-                    continue
-                if RefFlag:
-                    if line.startswith("{{"):
-                        line = line[2:]
-                    if line.endswith("}}"):
-                        line = line[:-2]
-                        RefFlag = False
-                RefText = RefText + line
-
-            elif LinksFlag or "External links" in line:
-                # print("Inside Links")
-                if not LinksFlag:
-                    LinksFlag = True
-                    continue
-                if LinksFlag:
-                    if line.startswith("*{{"):
-                        line = line[3:]
-                    if line.endswith("}}"):
-                        line = line[:-2]
-                        LinksFlag = False
-                LinksText = LinksText + line
-
             else:
-                # print("Inside Body")
-                BodyText = BodyText + line
+                ## Text not inside any of the above fields conidered as body
+                if not LinksFlag:
+                    BodyText = BodyText + line
 
-    # print("InfoboxText: "+InfoboxText)
-    # print("CategoryText: "+CategoryText)
-    # print("LinksText: "+LinksText)
-    # print("RefText: "+RefText)
-    # print("BodyText: "+BodyText)
+    ## Precossing for last page
 
     Tokenobj.infobox = tokenizer.tokenize(InfoboxText)
     Tokenobj.category = tokenizer.tokenize(CategoryText)
