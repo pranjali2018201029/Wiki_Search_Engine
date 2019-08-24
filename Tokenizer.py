@@ -1,8 +1,6 @@
 from nltk.tokenize import word_tokenize
 from nltk.tokenize import RegexpTokenizer
-
-## Tokenizer by using only space as delimiter so punctuations are removed
-tokenizer = RegexpTokenizer(r'\w+')
+from nltk.corpus import stopwords
 
 ## Class object will store field wise tokens for one WikiPage
 class TokenObject():
@@ -15,11 +13,16 @@ class TokenObject():
         self.ref = []
         self.body = []
 
+## List of stop words, words that not need to be indexed in Wikidata
+stop_words = set(stopwords.words('english'))
+## Tokenizer by using only space as delimiter so punctuations are removed
+tokenizer = RegexpTokenizer(r'\w+')
+## List of tokenobjects <--> List of pages
+TokenPages = []
+
 ## Input : Filtered parsed data file
 def word_tokenizer(IPFilePath):
 
-    ## List of tokenobjects <--> List of pages
-    TokenPages = []
     Tokenobj = TokenObject()
 
     InfoboxText = ""
@@ -49,19 +52,6 @@ def word_tokenizer(IPFilePath):
                     Tokenobj.links = tokenizer.tokenize(LinksText)
                     Tokenobj.ref = tokenizer.tokenize(RefText)
                     Tokenobj.body = tokenizer.tokenize(BodyText)
-
-                    print("\nTITLE TOKENS")
-                    print(Tokenobj.title)
-                    print("INFOBOX TOKENS")
-                    print(Tokenobj.infobox)
-                    print("CATEGORY TOKENS")
-                    print(Tokenobj.category)
-                    print("LINKS TOKENS")
-                    print(Tokenobj.links)
-                    print("REFERENCES TOKENS")
-                    print(Tokenobj.ref)
-                    print("BODY TOKENS")
-                    print(Tokenobj.body)
 
                     ## Append previous page obj to objlist
                     ## and Create new empty object for new page
@@ -143,26 +133,46 @@ def word_tokenizer(IPFilePath):
                     BodyText = BodyText + line
 
     ## Precossing for last page
-
     Tokenobj.infobox = tokenizer.tokenize(InfoboxText)
     Tokenobj.category = tokenizer.tokenize(CategoryText)
     Tokenobj.links = tokenizer.tokenize(LinksText)
     Tokenobj.ref = tokenizer.tokenize(RefText)
     Tokenobj.body = tokenizer.tokenize(BodyText)
 
-    print("\nTITLE TOKENS")
-    print(Tokenobj.title)
-    print("INFOBOX TOKENS")
-    print(Tokenobj.infobox)
-    print("CATEGORY TOKENS")
-    print(Tokenobj.category)
-    print("LINKS TOKENS")
-    print(Tokenobj.links)
-    print("REFERENCES TOKENS")
-    print(Tokenobj.ref)
-    print("BODY TOKENS")
-    print(Tokenobj.body)
-
     TokenPages.append(Tokenobj)
 
+def StopWordRemoval():
+
+    infobox_stopwords = ['Infobox', 'infobox']
+    category_stopwords = ['Category', 'category']
+    links_stopwords = ['External links']
+    ref_stopwords = ['Reflist', 'reflist', 'Bibliography', 'bibliography']
+    body_stopwords = ['REDIRECT']
+
+    for Tokenobj in TokenPages:
+        Tokenobj.infobox = [w for w in Tokenobj.infobox if w not in infobox_stopwords and w not in stop_words]
+        Tokenobj.category = [w for w in Tokenobj.category if w not in category_stopwords and w not in stop_words]
+        Tokenobj.links = [w for w in Tokenobj.links if w not in links_stopwords and w not in stop_words]
+        Tokenobj.ref = [w for w in Tokenobj.ref if w not in ref_stopwords and w not in stop_words]
+        Tokenobj.body = [w for w in Tokenobj.body if w not in body_stopwords and w not in stop_words]
+
+def PrintTokens():
+
+    for Tokenobj in TokenPages:
+        print("\nTITLE TOKENS")
+        print(Tokenobj.title)
+        print("INFOBOX TOKENS")
+        print(Tokenobj.infobox)
+        print("CATEGORY TOKENS")
+        print(Tokenobj.category)
+        print("LINKS TOKENS")
+        print(Tokenobj.links)
+        print("REFERENCES TOKENS")
+        print(Tokenobj.ref)
+        print("BODY TOKENS")
+        print(Tokenobj.body)
+
+
 word_tokenizer("Phase_1_Result.xml")
+StopWordRemoval()
+PrintTokens()
