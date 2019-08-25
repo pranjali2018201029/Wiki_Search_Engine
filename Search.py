@@ -13,12 +13,10 @@ InvIndex = {}
 Page_ID_Title = {}
 
 def LoadIndex(path_to_index):
-
+    global InvIndex
+    global Page_ID_Title
     with open(path_to_index, 'rb') as file:
         InvIndex = pickle.load(file)
-
-    # for key in InvIndex.keys():
-    #     print(key)
 
     with open('title_id.pkl', 'rb') as file:
         Page_ID_Title = pickle.load(file)
@@ -30,38 +28,51 @@ def Query_processing(query):
     query_tokens = [w for w in query_tokens if w not in stop_words and w.isalpha()]
     query_tokens = [ps.stem(w) for w in query_tokens]
 
-    return query_tokens
+    return query_tokens, "all"
+
+def Field_Query_Processing(query):
+
+    query_tokens = []
+    fields = []
+    field_tokens = query.split()
+
+    for field_token in field_tokens:
+        fields.append(field_token[0:1])
+        query_tokens.append(field_token[2:])
+
+    query_tokens = [w.casefold() for w in query_tokens]
+    query_tokens = [w for w in query_tokens if w not in stop_words and w.isalpha()]
+    query_tokens = [ps.stem(w) for w in query_tokens]
+
+    return query_tokens, fields
 
 def Find_PostingList(token, field="all"):
 
     PostingList = {}
 
-    # if 'ice' in InvIndex.keys():
-    #     print("ICE TRUE")
-
     if token in InvIndex.keys():
-        print("TRUE: "+ token)
         token_entry = InvIndex[token]
 
         for docID in token_entry.keys():
-            if field=="all" :
-                freq = 0
+            freq = 0
+            if field=="all" :    
                 for field in token_entry[docID]:
                     freq = freq + token_entry[docID][field]
             else:
-                freq = token_entry[docID][field]
+                if field in token_entry[docID]:
+                    freq = token_entry[docID][field]
             PostingList[docID] = freq
 
     return PostingList
 
-def Search_Pages(query_tokens):
+def Search_Pages(query_tokens, fields="all"):
 
     Doc_Occurence = {}
 
-    for token in query_tokens:
-        Posting_List = Find_PostingList(token)
-        print("POSTINGLIST: "+ token)
-        print(Posting_List)
+    for i in range(len(query_tokens)):
+        token = query_tokens[i]
+        Posting_List = Find_PostingList(token, fields[i])
+
         for docID in Posting_List.keys():
             if docID not in Doc_Occurence :
                 Doc_Occurence[docID] = 1
@@ -75,20 +86,17 @@ def RelevantTitles(Doc_Occurence):
 
     TitleList = []
     for i in range(len(Doc_Occurence), 0, -1):
-        TitleList.append(Page_ID_Title[Doc_Occurence[i-1]])
-    print("TitleList: ")
-    print(TitleList)
+        TitleList.append(Page_ID_Title[Doc_Occurence[i-1][0]])
     return TitleList
 
 def read_file(testfile):
+
     with open(testfile, 'r') as file:
         queries = file.readlines()
     return queries
 
 def write_file(outputs, path_to_output):
-    '''outputs should be a list of lists.
-        len(outputs) = number of queries
-        Each element in outputs should be a list of titles corresponding to a particular query.'''
+
     with open(path_to_output, 'w') as file:
         for output in outputs:
             for line in output:
@@ -96,17 +104,23 @@ def write_file(outputs, path_to_output):
             file.write('\n')
 
 def search(path_to_index, queries):
-
-    LoadIndex(path_to_index)
     outputs = []
+    field_query_flag = False
 
     for query in queries:
-        query_tokens = Query_processing(query)
-        print("query_tokens: ")
-        print(query_tokens)
-        Doc_Occurence = Search_Pages(query_tokens)
-        print("Doc_Occurence: ")
-        print(Doc_Occurence)
+        if ':' in query:
+            query_tokens, fields = Field_Query_Processing(query)
+            print("QUERY TOKENS")
+            print(query_tokens)
+            print("FIELDS")
+            print(fields)
+        else:
+            query_tokens, fields = Query_processing(query)
+            print("QUERY TOKENS")
+            print(query_tokens)
+            print("FIELDS")
+            print(fields)
+        Doc_Occurence = Search_Pages(query_tokens, fields)
         TitleList = RelevantTitles(Doc_Occurence)
         outputs.append(TitleList)
     return outputs
@@ -116,12 +130,11 @@ def main():
     # testfile = sys.argv[2]
     # path_to_output = sys.argv[3]
     path_to_index = "index.pkl"
+    LoadIndex(path_to_index)
     testfile = "test.txt"
     path_to_output = "SearchResults.txt"
 
     queries = read_file(testfile)
-    print("QUERIES :")
-    print(queries)
     outputs = search(path_to_index, queries)
     write_file(outputs, path_to_output)
 
