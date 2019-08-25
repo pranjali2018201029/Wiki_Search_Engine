@@ -2,7 +2,9 @@ from nltk.tokenize import word_tokenize
 from nltk.tokenize import RegexpTokenizer
 from nltk.corpus import stopwords
 from nltk.stem import PorterStemmer
-import json
+# import json
+# import csv
+import pickle
 
 ## Class object will store field wise tokens for one WikiPage
 class TokenObject():
@@ -261,8 +263,20 @@ def Create_Index():
                 InvIndex[w][TokenObj.id]['b'] = InvIndex[w][TokenObj.id]['b'] + 1
 
 def Store_Index():
-    with open('index.json', 'w') as file:
-     file.write(json.dumps(InvIndex))
+
+    # with open('index.json', 'w') as file:
+    #  file.write(json.dumps(InvIndex))
+    #
+    # with open("index.csv", "w") as file:
+    #     w = csv.writer(file)
+    #     for key, val in InvIndex.items():
+    #         w.writerow([key, str(val)])
+    #
+    # with open("index.txt", "w") as file:
+    #     file.write(str(InvIndex))
+
+    with open("index.pkl", "wb") as file:
+        pickle.dump(InvIndex,file)
 
 word_tokenizer("Phase_1_Result.xml")
 print("TOKENIZATION DONE")
