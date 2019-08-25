@@ -212,7 +212,7 @@ def Check_Index(word, doc_id):
     if word not in InvIndex.keys():
         InvIndex[word] = {}
     if doc_id not in InvIndex[word].keys():
-        InvIndex[word][doc_id] = [0,0,0,0,0,0]
+        InvIndex[word][doc_id] = {}
 
 def Create_Index():
 
@@ -220,27 +220,45 @@ def Create_Index():
 
         for w in TokenObj.title:
             Check_Index(w, TokenObj.id)
-            InvIndex[w][TokenObj.id][0] = InvIndex[w][TokenObj.id][0] + 1
+            if 't' not in InvIndex[w][TokenObj.id].keys():
+                 InvIndex[w][TokenObj.id]['t'] = 1
+            else:
+                InvIndex[w][TokenObj.id]['t'] = InvIndex[w][TokenObj.id]['t'] + 1
 
         for w in TokenObj.infobox:
             Check_Index(w, TokenObj.id)
-            InvIndex[w][TokenObj.id][1] = InvIndex[w][TokenObj.id][1] + 1
+            if 'i' not in InvIndex[w][TokenObj.id].keys():
+                 InvIndex[w][TokenObj.id]['i'] = 1
+            else:
+                InvIndex[w][TokenObj.id]['i'] = InvIndex[w][TokenObj.id]['i'] + 1
 
         for w in TokenObj.category:
             Check_Index(w, TokenObj.id)
-            InvIndex[w][TokenObj.id][2] = InvIndex[w][TokenObj.id][2] + 1
+            if 'c' not in InvIndex[w][TokenObj.id].keys():
+                 InvIndex[w][TokenObj.id]['c'] = 1
+            else:
+                InvIndex[w][TokenObj.id]['c'] = InvIndex[w][TokenObj.id]['c'] + 1
 
         for w in TokenObj.links:
             Check_Index(w, TokenObj.id)
-            InvIndex[w][TokenObj.id][3] = InvIndex[w][TokenObj.id][3] + 1
+            if 'l' not in InvIndex[w][TokenObj.id].keys():
+                 InvIndex[w][TokenObj.id]['l'] = 1
+            else:
+                InvIndex[w][TokenObj.id]['l'] = InvIndex[w][TokenObj.id]['l'] + 1
 
         for w in TokenObj.ref:
             Check_Index(w, TokenObj.id)
-            InvIndex[w][TokenObj.id][4] = InvIndex[w][TokenObj.id][4] + 1
+            if 'r' not in InvIndex[w][TokenObj.id].keys():
+                 InvIndex[w][TokenObj.id]['r'] = 1
+            else:
+                InvIndex[w][TokenObj.id]['r'] = InvIndex[w][TokenObj.id]['r'] + 1
 
         for w in TokenObj.body:
             Check_Index(w, TokenObj.id)
-            InvIndex[w][TokenObj.id][5] = InvIndex[w][TokenObj.id][5] + 1
+            if 'b' not in InvIndex[w][TokenObj.id].keys():
+                 InvIndex[w][TokenObj.id]['b'] = 1
+            else:
+                InvIndex[w][TokenObj.id]['b'] = InvIndex[w][TokenObj.id]['b'] + 1
 
 def Store_Index():
     with open('index.json', 'w') as file:
