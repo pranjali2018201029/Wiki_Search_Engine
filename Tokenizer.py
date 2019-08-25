@@ -1,6 +1,7 @@
 from nltk.tokenize import word_tokenize
 from nltk.tokenize import RegexpTokenizer
 from nltk.corpus import stopwords
+from nltk.stem import PorterStemmer
 
 ## Class object will store field wise tokens for one WikiPage
 class TokenObject():
@@ -17,6 +18,8 @@ class TokenObject():
 stop_words = set(stopwords.words('english'))
 ## Tokenizer by using only space as delimiter so punctuations are removed
 tokenizer = RegexpTokenizer(r'\w+')
+## PorterStemmer
+ps = PorterStemmer()
 ## List of tokenobjects <--> List of pages
 TokenPages = []
 
@@ -70,9 +73,8 @@ def word_tokenizer(IPFilePath):
                     LinksFlag = False
                     RefFlag = False
 
-
                 ## Continue reading next line after processing for this title line
-                Tokenobj.title = word_tokenize(line[15:])
+                Tokenobj.title = tokenizer.tokenize(line[15:])
                 continue
 
             elif line.startswith("Text Content: "):
@@ -149,12 +151,23 @@ def StopWordRemoval():
     ref_stopwords = ['Reflist', 'reflist', 'Bibliography', 'bibliography']
     body_stopwords = ['REDIRECT']
 
+    ## Stopword removal, Numbers removal and case folding
     for Tokenobj in TokenPages:
-        Tokenobj.infobox = [w for w in Tokenobj.infobox if w not in infobox_stopwords and w not in stop_words]
-        Tokenobj.category = [w for w in Tokenobj.category if w not in category_stopwords and w not in stop_words]
-        Tokenobj.links = [w for w in Tokenobj.links if w not in links_stopwords and w not in stop_words]
-        Tokenobj.ref = [w for w in Tokenobj.ref if w not in ref_stopwords and w not in stop_words]
-        Tokenobj.body = [w for w in Tokenobj.body if w not in body_stopwords and w not in stop_words]
+        Tokenobj.title = [w.casefold() for w in Tokenobj.title]
+        Tokenobj.infobox = [w.casefold() for w in Tokenobj.infobox if w not in infobox_stopwords and w not in stop_words and w.isalpha()]
+        Tokenobj.category = [w.casefold() for w in Tokenobj.category if w not in category_stopwords and w not in stop_words and w.isalpha()]
+        Tokenobj.links = [w.casefold() for w in Tokenobj.links if w not in links_stopwords and w not in stop_words and w.isalpha()]
+        Tokenobj.ref = [w.casefold() for w in Tokenobj.ref if w not in ref_stopwords and w not in stop_words and w.isalpha()]
+        Tokenobj.body = [w.casefold() for w in Tokenobj.body if w not in body_stopwords and w not in stop_words and w.isalpha()]
+
+def Stemming():
+
+    for Tokenobj in TokenPages:
+        Tokenobj.infobox = [ps.stem(w) for w in Tokenobj.infobox]
+        Tokenobj.category = [ps.stem(w) for w in Tokenobj.category]
+        Tokenobj.links = [ps.stem(w) for w in Tokenobj.links]
+        Tokenobj.ref = [ps.stem(w) for w in Tokenobj.ref]
+        Tokenobj.body = [ps.stem(w) for w in Tokenobj.body]
 
 def PrintTokens():
 
@@ -172,7 +185,10 @@ def PrintTokens():
         print("BODY TOKENS")
         print(Tokenobj.body)
 
-
 word_tokenizer("Phase_1_Result.xml")
+print("TOKENIZATION DONE")
 StopWordRemoval()
+print("STOP WORD REMOVAL AND CASE FOLDING DONE")
+Stemming()
+print("STEMMING DONE")
 PrintTokens()

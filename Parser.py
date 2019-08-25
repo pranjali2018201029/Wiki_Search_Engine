@@ -92,3 +92,4 @@ if __name__ == "__main__":
 
     tag_names_to_exclude = {'siteinfo', 'ns', 'timestamp', 'contributor', 'model', 'format', 'id', 'redirect', 'comment', 'sha1'}
     main(tag_names_to_exclude, "Phase1_Dump.xml", "Phase_1_Filtered.xml")
+    print("PARSING DONE")
