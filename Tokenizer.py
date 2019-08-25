@@ -278,6 +278,9 @@ def Store_Index():
     with open("index.pkl", "wb") as file:
         pickle.dump(InvIndex,file)
 
+    with open("title_id.pkl", "wb") as file:
+        pickle.dump(Page_ID_Title,file)
+
 word_tokenizer("Phase_1_Result.xml")
 print("TOKENIZATION DONE")
 CaseFolding()
@@ -289,3 +292,6 @@ Create_Index()
 print("INDEX CREATION DONE")
 Store_Index()
 print("INDEX STORED")
+
+for w in InvIndex.keys():
+    print(w)
