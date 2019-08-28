@@ -5,6 +5,9 @@ from nltk.stem import PorterStemmer
 # import json
 # import csv
 import pickle
+import time
+from stemming import porter as ps
+import sys
 
 ## Class object will store field wise tokens for one WikiPage
 class TokenObject():
@@ -20,10 +23,9 @@ class TokenObject():
 
 ## List of stop words, words that not need to be indexed in Wikidata
 stop_words = set(stopwords.words('english'))
+StopWords = ['should', 'would', 'gt', 'lt', 'can', 'could', 'shall']
 ## Tokenizer by using only space as delimiter so punctuations are removed
-tokenizer = RegexpTokenizer(r'\w+')
-## PorterStemmer
-ps = PorterStemmer()
+tokenizer = RegexpTokenizer(r'[a-zA-Z0-9]+')
 ## List of tokenobjects <--> List of pages
 TokenPages = []
 ## Inverted Index Data Structure
@@ -170,18 +172,18 @@ def StopWordRemoval():
 
     infobox_stopwords = ['infobox']
     category_stopwords = ['category']
-    links_stopwords = ['external links']
-    ref_stopwords = ['reflist','bibliography']
+    links_stopwords = ['external links', 'http', 'www', 'com', 'edu', 'in', 'html']
+    ref_stopwords = ['reflist','bibliography', 'http', 'www', 'com', 'edu', 'in', 'html']
     body_stopwords = ['redirect']
 
     ## Stopword removal, Numbers removal and case folding
     for Tokenobj in TokenPages:
-        Tokenobj.title = [w for w in Tokenobj.title if w not in stop_words and w.isalpha()]
-        Tokenobj.infobox = [w for w in Tokenobj.infobox if w not in infobox_stopwords and w not in stop_words and w.isalpha()]
-        Tokenobj.category = [w for w in Tokenobj.category if w not in category_stopwords and w not in stop_words and w.isalpha()]
-        Tokenobj.links = [w for w in Tokenobj.links if w not in links_stopwords and w not in stop_words and w.isalpha()]
-        Tokenobj.ref = [w for w in Tokenobj.ref if w not in ref_stopwords and w not in stop_words and w.isalpha()]
-        Tokenobj.body = [w for w in Tokenobj.body if w not in body_stopwords and w not in stop_words and w.isalpha()]
+        Tokenobj.title = [w for w in Tokenobj.title if w not in stop_words and w not in StopWords]
+        Tokenobj.infobox = [w for w in Tokenobj.infobox if w not in infobox_stopwords and w not in stop_words and w not in StopWords]
+        Tokenobj.category = [w for w in Tokenobj.category if w not in category_stopwords and w not in stop_words and w not in StopWords]
+        Tokenobj.links = [w for w in Tokenobj.links if w not in links_stopwords and w not in stop_words and w not in StopWords and w.isalpha()]
+        Tokenobj.ref = [w for w in Tokenobj.ref if w not in ref_stopwords and w not in stop_words and w not in StopWords and w.isalpha()]
+        Tokenobj.body = [w for w in Tokenobj.body if w not in body_stopwords and w not in stop_words and w not in StopWords]
 
 def Stemming():
 
@@ -262,7 +264,7 @@ def Create_Index():
             else:
                 InvIndex[w][TokenObj.id]['b'] = InvIndex[w][TokenObj.id]['b'] + 1
 
-def Store_Index():
+def Store_Index(path_to_index_folder):
 
     # with open('index.json', 'w') as file:
     #  file.write(json.dumps(InvIndex))
@@ -275,23 +277,35 @@ def Store_Index():
     # with open("index.txt", "w") as file:
     #     file.write(str(InvIndex))
 
-    with open("index.pkl", "wb") as file:
+    with open(path_to_index_folder+"/index.pkl", "wb") as file:
         pickle.dump(InvIndex,file)
 
-    with open("title_id.pkl", "wb") as file:
+    with open(path_to_index_folder+"/title_id.pkl", "wb") as file:
         pickle.dump(Page_ID_Title,file)
 
-word_tokenizer("Phase_1_Result.xml")
-print("TOKENIZATION DONE")
-CaseFolding()
-StopWordRemoval()
-print("STOP WORD REMOVAL AND CASE FOLDING DONE")
-Stemming()
-print("STEMMING DONE")
-Create_Index()
-print("INDEX CREATION DONE")
-Store_Index()
-print("INDEX STORED")
+if __name__ == "__main__":
 
-for w in InvIndex.keys():
-    print(w)
+    start = time.time()
+    word_tokenizer("Phase_1_Result.xml")
+    end1 = time.time()
+    print("TOKENIZATION "+ str(end1 - start))
+    CaseFolding()
+    StopWordRemoval()
+    end2 = time.time()
+    print("STOP WORD REMOVAL AND CASE FOLDING "+ str(end2-end1))
+    Stemming()
+    end3 = time.time()
+    print("STEMMING "+str(end3-end2))
+    Create_Index()
+    end4 = time.time()
+    print("INDEX CREATION "+str(end4-end3))
+    Store_Index(sys.argv[1])
+    end5 = time.time()
+    print("TOTAL TIME "+str(end5-start))
+
+    TokenList = list(InvIndex.keys())
+    TokenList.sort()
+    print(TokenList)
+
+    with open("Tokens.txt", 'w') as file:
+        file.write(str(TokenList))
