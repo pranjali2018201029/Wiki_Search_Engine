@@ -22,7 +22,7 @@ class TokenObject():
         self.body = []
 
 ## List of stop words, words that not need to be indexed in Wikidata
-StopWords = ['should', 'would', 'gt', 'lt', 'can', 'could', 'shall']
+StopWords = ['should', 'would', 'gt', 'lt', 'can', 'could', 'shall', 'amp', 'url', 'br', 'deadurl', 'archiveurl', 'nowiki', 'colspan', 'rowspan']
 stop_words = set(stopwords.words('english') + StopWords)
 ## Tokenizer by using only space as delimiter so punctuations are removed
 tokenizer = RegexpTokenizer(r'[a-zA-Z0-9]+')
@@ -201,22 +201,6 @@ def Stemming():
         Tokenobj.ref = [ps.stem(w) for w in Tokenobj.ref]
         Tokenobj.body = [ps.stem(w) for w in Tokenobj.body]
 
-def PrintTokens():
-
-    for Tokenobj in TokenPages:
-        print("\nTITLE TOKENS")
-        print(Tokenobj.title)
-        print("INFOBOX TOKENS")
-        print(Tokenobj.infobox)
-        print("CATEGORY TOKENS")
-        print(Tokenobj.category)
-        print("LINKS TOKENS")
-        print(Tokenobj.links)
-        print("REFERENCES TOKENS")
-        print(Tokenobj.ref)
-        print("BODY TOKENS")
-        print(Tokenobj.body)
-
 def Check_Index(word, doc_id):
 
     if word not in InvIndex.keys():
@@ -272,19 +256,6 @@ def Create_Index():
 
 def Store_Index(path_to_index_folder):
 
-    # with open('index.json', 'w') as file:
-    #  file.write(json.dumps(InvIndex))
-    #
-    # with open("index.csv", "w") as file:
-    #     w = csv.writer(file)
-    #     for key, val in InvIndex.items():
-    #         w.writerow([key, str(val)])
-    #
-    # with open("index.txt", "w") as file:
-    #     file.write(str(InvIndex))
-
-    print(InvIndex)
-
     with open(path_to_index_folder+"/index.pkl", "wb") as file:
         pickle.dump(InvIndex,file)
 
@@ -314,6 +285,6 @@ if __name__ == "__main__":
     # TokenList = list(InvIndex.keys())
     # TokenList.sort()
     # print(TokenList)
-    #
+
     # with open("Tokens.txt", 'w') as file:
     #     file.write(str(TokenList))

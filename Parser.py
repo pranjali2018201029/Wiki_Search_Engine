@@ -3,6 +3,11 @@ from xml.sax import make_parser
 from xml.sax.saxutils import XMLFilterBase, XMLGenerator
 import time
 import sys
+import re
+
+## Remove URL from the text
+URL_RegEx = re.compile(r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+',re.DOTALL)
+# CSS_RegEx = re.compile(r'((style|color|background|font)+(=|:)+([a-zA-Z0-9#&.]+)+;)|((colspan|rowspan|row|col)+(=)+([0-9.]+)|(&quot))', re.DOTALL)
 
 class WikiContenthandler(xml.sax.ContentHandler):
 
@@ -37,6 +42,8 @@ class WikiContenthandler(xml.sax.ContentHandler):
         if name == "text":
             self.text_tag = False
             self.RedirectFlag = False
+            self.text = URL_RegEx.sub('',self.text)
+            # self.text = CSS_RegEx.sub('',self.text)
             self.ResultFile.write("Text Content: " + self.text + "\n")
             self.ResultFile.write("\n")
             self.text = ""

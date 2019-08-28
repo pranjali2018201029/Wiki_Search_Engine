@@ -132,11 +132,7 @@ def search(path_to_index, queries):
             print("FIELDS")
             print(fields)
         Doc_Occurence = Search_Pages(query_tokens, fields)
-        # print("Doc_Occurence")
-        # print(Doc_Occurence)
         TitleList = RelevantTitles(Doc_Occurence, 10)
-        # print("TitleList")
-        # print(TitleList)
         outputs.append(TitleList)
     return outputs
 
@@ -156,6 +152,3 @@ def main():
 if __name__ == '__main__':
     main()
     print("TOKEN COUNT: "+ str(len(InvIndex.keys())))
-
-    # for key in InvIndex.keys():
-    #     print(key)
