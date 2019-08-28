@@ -22,8 +22,8 @@ class TokenObject():
         self.body = []
 
 ## List of stop words, words that not need to be indexed in Wikidata
-stop_words = set(stopwords.words('english'))
 StopWords = ['should', 'would', 'gt', 'lt', 'can', 'could', 'shall']
+stop_words = set(stopwords.words('english') + StopWords)
 ## Tokenizer by using only space as delimiter so punctuations are removed
 tokenizer = RegexpTokenizer(r'[a-zA-Z0-9]+')
 ## List of tokenobjects <--> List of pages
@@ -167,23 +167,29 @@ def CaseFolding():
         Tokenobj.ref = [w.casefold() for w in Tokenobj.ref]
         Tokenobj.body = [w.casefold() for w in Tokenobj.body]
 
+        Tokenobj.infobox = [w for w in Tokenobj.infobox if w.isalpha() or w.isnumeric()]
+        Tokenobj.category = [w for w in Tokenobj.category if w.isalpha() or w.isnumeric()]
+        Tokenobj.links = [w for w in Tokenobj.links if w.isalpha() or w.isnumeric()]
+        Tokenobj.ref = [w for w in Tokenobj.ref if w.isalpha() or w.isnumeric()]
+        Tokenobj.body = [w for w in Tokenobj.body if w.isalpha() or w.isnumeric()]
+
 
 def StopWordRemoval():
 
-    infobox_stopwords = ['infobox']
-    category_stopwords = ['category']
-    links_stopwords = ['external links', 'http', 'www', 'com', 'edu', 'in', 'html']
-    ref_stopwords = ['reflist','bibliography', 'http', 'www', 'com', 'edu', 'in', 'html']
-    body_stopwords = ['redirect']
+    infobox_stopwords = {'infobox'}
+    category_stopwords = {'category'}
+    links_stopwords = {'external links', 'http', 'www', 'com', 'edu', 'in', 'html'}
+    ref_stopwords = {'reflist','bibliography', 'http', 'www', 'com', 'edu', 'in', 'html'}
+    body_stopwords = {'redirect'}
 
     ## Stopword removal, Numbers removal and case folding
     for Tokenobj in TokenPages:
-        Tokenobj.title = [w for w in Tokenobj.title if w not in stop_words and w not in StopWords]
-        Tokenobj.infobox = [w for w in Tokenobj.infobox if w not in infobox_stopwords and w not in stop_words and w not in StopWords]
-        Tokenobj.category = [w for w in Tokenobj.category if w not in category_stopwords and w not in stop_words and w not in StopWords]
-        Tokenobj.links = [w for w in Tokenobj.links if w not in links_stopwords and w not in stop_words and w not in StopWords and w.isalpha()]
-        Tokenobj.ref = [w for w in Tokenobj.ref if w not in ref_stopwords and w not in stop_words and w not in StopWords and w.isalpha()]
-        Tokenobj.body = [w for w in Tokenobj.body if w not in body_stopwords and w not in stop_words and w not in StopWords]
+        Tokenobj.title = [w for w in Tokenobj.title if w not in stop_words]
+        Tokenobj.infobox = [w for w in Tokenobj.infobox if w not in infobox_stopwords and w not in stop_words]
+        Tokenobj.category = [w for w in Tokenobj.category if w not in category_stopwords and w not in stop_words]
+        Tokenobj.links = [w for w in Tokenobj.links if w not in links_stopwords and w not in stop_words and w.isalpha()]
+        Tokenobj.ref = [w for w in Tokenobj.ref if w not in ref_stopwords and w not in stop_words and w.isalpha()]
+        Tokenobj.body = [w for w in Tokenobj.body if w not in body_stopwords and w not in stop_words]
 
 def Stemming():
 
@@ -277,6 +283,8 @@ def Store_Index(path_to_index_folder):
     # with open("index.txt", "w") as file:
     #     file.write(str(InvIndex))
 
+    print(InvIndex)
+
     with open(path_to_index_folder+"/index.pkl", "wb") as file:
         pickle.dump(InvIndex,file)
 
@@ -303,9 +311,9 @@ if __name__ == "__main__":
     end5 = time.time()
     print("TOTAL TIME "+str(end5-start))
 
-    TokenList = list(InvIndex.keys())
-    TokenList.sort()
-    print(TokenList)
-
-    with open("Tokens.txt", 'w') as file:
-        file.write(str(TokenList))
+    # TokenList = list(InvIndex.keys())
+    # TokenList.sort()
+    # print(TokenList)
+    #
+    # with open("Tokens.txt", 'w') as file:
+    #     file.write(str(TokenList))
