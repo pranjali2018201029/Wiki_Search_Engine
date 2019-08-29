@@ -1,1 +1,1 @@
-python3 Search.py "./Index" "test.txt" "SearchResults.txt"
+python3 Search.py $1 $2 $3

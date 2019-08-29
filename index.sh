@@ -1,2 +1,2 @@
-python3 Parser.py "Phase1_Dump.xml"
-python3 Tokenizer.py "./index"
+python3 Parser.py $1
+python3 Tokenizer.py $2

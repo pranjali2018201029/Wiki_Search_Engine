@@ -2,11 +2,10 @@ from nltk.tokenize import word_tokenize
 from nltk.tokenize import RegexpTokenizer
 from nltk.corpus import stopwords
 from nltk.stem import PorterStemmer
-# import json
-# import csv
+import os
 import pickle
 import time
-from stemming import porter as ps
+import porter as ps
 import sys
 
 ## Class object will store field wise tokens for one WikiPage
@@ -256,6 +255,9 @@ def Create_Index():
 
 def Store_Index(path_to_index_folder):
 
+    if not os.path.exists(path_to_index_folder):
+        os.makedirs(path_to_index_folder)
+
     with open(path_to_index_folder+"/index.pkl", "wb") as file:
         pickle.dump(InvIndex,file)
 
@@ -264,27 +266,16 @@ def Store_Index(path_to_index_folder):
 
 if __name__ == "__main__":
 
-    start = time.time()
-    word_tokenizer("Phase_1_Result.xml")
-    end1 = time.time()
-    print("TOKENIZATION "+ str(end1 - start))
+    word_tokenizer("./Phase_1_Result.xml")
+
     CaseFolding()
     StopWordRemoval()
-    end2 = time.time()
-    print("STOP WORD REMOVAL AND CASE FOLDING "+ str(end2-end1))
+
     Stemming()
-    end3 = time.time()
-    print("STEMMING "+str(end3-end2))
+
     Create_Index()
-    end4 = time.time()
-    print("INDEX CREATION "+str(end4-end3))
+
     Store_Index(sys.argv[1])
-    end5 = time.time()
-    print("TOTAL TIME "+str(end5-start))
 
-    # TokenList = list(InvIndex.keys())
-    # TokenList.sort()
-    # print(TokenList)
-
-    # with open("Tokens.txt", 'w') as file:
-    #     file.write(str(TokenList))
+    if os.path.exists("./Phase_1_Result.xml"):
+        os.remove("./Phase_1_Result.xml")

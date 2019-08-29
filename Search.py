@@ -1,10 +1,12 @@
 from nltk.tokenize import word_tokenize
 from nltk.tokenize import RegexpTokenizer
 from nltk.corpus import stopwords
-from nltk.stem import PorterStemmer
+# from nltk.stem import PorterStemmer
 import sys
 import pickle
-from stemming import porter as ps
+import porter as ps
+import time
+#from lib/stemming import porter as ps
 
 stop_words = set(stopwords.words('english'))
 tokenizer = RegexpTokenizer(r'\w+')
@@ -150,5 +152,5 @@ def main():
     write_file(outputs, path_to_output)
 
 if __name__ == '__main__':
+
     main()
-    print("TOKEN COUNT: "+ str(len(InvIndex.keys())))
