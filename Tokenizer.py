@@ -211,47 +211,91 @@ def Create_Index():
 
     for TokenObj in TokenPages:
 
+        Word_TF = set()
+
         for w in TokenObj.title:
             Check_Index(w, TokenObj.id)
+            Word_TF.add(w)
             if 't' not in InvIndex[w][TokenObj.id].keys():
-                 InvIndex[w][TokenObj.id]['t'] = 1
+                InvIndex[w][TokenObj.id]['t'] = 1
             else:
                 InvIndex[w][TokenObj.id]['t'] = InvIndex[w][TokenObj.id]['t'] + 1
 
         for w in TokenObj.infobox:
             Check_Index(w, TokenObj.id)
+            Word_TF.add(w)
             if 'i' not in InvIndex[w][TokenObj.id].keys():
-                 InvIndex[w][TokenObj.id]['i'] = 1
+                InvIndex[w][TokenObj.id]['i'] = 1
             else:
                 InvIndex[w][TokenObj.id]['i'] = InvIndex[w][TokenObj.id]['i'] + 1
 
         for w in TokenObj.category:
             Check_Index(w, TokenObj.id)
+            Word_TF.add(w)
             if 'c' not in InvIndex[w][TokenObj.id].keys():
-                 InvIndex[w][TokenObj.id]['c'] = 1
+                InvIndex[w][TokenObj.id]['c'] = 1
             else:
                 InvIndex[w][TokenObj.id]['c'] = InvIndex[w][TokenObj.id]['c'] + 1
 
         for w in TokenObj.links:
             Check_Index(w, TokenObj.id)
+            Word_TF.add(w)
             if 'l' not in InvIndex[w][TokenObj.id].keys():
-                 InvIndex[w][TokenObj.id]['l'] = 1
+                InvIndex[w][TokenObj.id]['l'] = 1
             else:
                 InvIndex[w][TokenObj.id]['l'] = InvIndex[w][TokenObj.id]['l'] + 1
 
         for w in TokenObj.ref:
             Check_Index(w, TokenObj.id)
+            Word_TF.add(w)
             if 'r' not in InvIndex[w][TokenObj.id].keys():
-                 InvIndex[w][TokenObj.id]['r'] = 1
+                InvIndex[w][TokenObj.id]['r'] = 1
             else:
                 InvIndex[w][TokenObj.id]['r'] = InvIndex[w][TokenObj.id]['r'] + 1
 
         for w in TokenObj.body:
             Check_Index(w, TokenObj.id)
+            Word_TF.add(w)
             if 'b' not in InvIndex[w][TokenObj.id].keys():
-                 InvIndex[w][TokenObj.id]['b'] = 1
+                InvIndex[w][TokenObj.id]['b'] = 1
             else:
                 InvIndex[w][TokenObj.id]['b'] = InvIndex[w][TokenObj.id]['b'] + 1
+
+        ## Update index with normalised tf (field-wise normalize) and add normalized total tf
+        # title_words = len(TokenObj.title)
+        # infobox_words = len(TokenObj.infobox)
+        # category_words = len(TokenObj.category)
+        # links_words = len(TokenObj.links)
+        # ref_words = len(TokenObj.ref)
+        # body_words = len(TokenObj.body)
+
+        # Doc_total_words = title_words + infobox_words + category_words + links_words + ref_words + body_words
+
+        for word in Word_TF:
+            word_doc_entry = InvIndex[word][TokenObj.id]
+            word_total_freq = 0
+
+            if 't' in word_doc_entry:
+                word_total_freq += word_doc_entry['t']
+                # word_doc_entry['t'] /= title_words
+            if 'i' in word_doc_entry:
+                word_total_freq += word_doc_entry['i']
+                # word_doc_entry['i'] /= infobox_words
+            if 'c' in word_doc_entry:
+                word_total_freq += word_doc_entry['c']
+                # word_doc_entry['c'] /= category_words
+            if 'l' in word_doc_entry:
+                word_total_freq += word_doc_entry['l']
+                # word_doc_entry['l'] /= links_words
+            if 'r' in word_doc_entry:
+                word_total_freq += word_doc_entry['r']
+                # word_doc_entry['r'] /= ref_words
+            if 'b' in word_doc_entry:
+                word_total_freq += word_doc_entry['b']
+                # word_doc_entry['b'] /= body_words
+
+            # word_doc_entry['s'] = (word_total_freq / Doc_total_words)
+            word_doc_entry['s'] = word_total_freq
 
 def Store_Index(path_to_index_folder):
 

@@ -6,6 +6,7 @@ import sys
 import pickle
 import porter as ps
 import time
+import math
 #from lib/stemming import porter as ps
 
 stop_words = set(stopwords.words('english'))
@@ -15,15 +16,19 @@ tokenizer = RegexpTokenizer(r'\w+')
 InvIndex = {}
 Page_ID_Title = {}
 
+No_Docs = 0
+
 def LoadIndex(path_to_index_folder):
     global InvIndex
     global Page_ID_Title
+    global No_Docs
 
     with open(path_to_index_folder+"/index.pkl", 'rb') as file:
         InvIndex = pickle.load(file)
 
     with open(path_to_index_folder+"/title_id.pkl", 'rb') as file:
         Page_ID_Title = pickle.load(file)
+        No_Docs = len(Page_ID_Title)
 
 def Query_processing(query):
 
@@ -51,7 +56,7 @@ def Field_Query_Processing(query):
 
     return query_tokens, fields
 
-def Find_PostingList(token, field="all"):
+def Find_PostingList(token, field="all", IDF=0):
 
     PostingList = {}
 
@@ -59,14 +64,29 @@ def Find_PostingList(token, field="all"):
         token_entry = InvIndex[token]
 
         for docID in token_entry.keys():
+            Normalized_tf = 0
+            tf = 0
             if field=="all" :
-                freq = 0
-                for key in token_entry[docID].keys():
-                    freq = freq + token_entry[docID][key]
-                PostingList[docID] = freq
+                #Normalized_tf = token_entry[docID]['s']
+                tf = token_entry[docID]['s']
             else:
                 if field in token_entry[docID].keys():
-                    PostingList[docID] = token_entry[docID][field]
+                    #Normalized_tf = token_entry[docID][field]
+                    tf = token_entry[docID][field]
+
+            DF = len(token_entry.keys())
+            IDF = No_Docs/DF
+            Log_IDF = math.log(IDF,10)
+
+            #tf_idf = Normalized_tf*Log_IDF
+            Log_TF = math.log(tf+1, 10)
+            tf_idf = Log_TF*Log_IDF
+
+            if IDF==0:
+                #PostingList[docID] = Normalized_tfs
+                PostingList[docID] = tf
+            else:
+                PostingList[docID] = tf_idf
 
     return PostingList
 
@@ -82,7 +102,7 @@ def Search_Pages(query_tokens, fields=[]):
             field = "all"
         else:
             field = fields[i]
-        Posting_List = Find_PostingList(token, field)
+        Posting_List = Find_PostingList(token, field, len(query_tokens)-1)
 
         for docID in Posting_List.keys():
 
@@ -101,20 +121,6 @@ def RelevantTitles(Doc_Occurence, TopN):
     for i in range(0, TopN, 1):
         TitleList.append(Page_ID_Title[Doc_Occurence[i][0]])
     return TitleList
-
-def read_file(testfile):
-
-    with open(testfile, 'r') as file:
-        queries = file.readlines()
-    return queries
-
-def write_file(outputs, path_to_output):
-
-    with open(path_to_output, 'w') as file:
-        for output in outputs:
-            for line in output:
-                file.write(line.strip() + '\n')
-            file.write('\n')
 
 def search(path_to_index, queries):
     outputs = []
@@ -137,6 +143,20 @@ def search(path_to_index, queries):
         TitleList = RelevantTitles(Doc_Occurence, 10)
         outputs.append(TitleList)
     return outputs
+
+def read_file(testfile):
+
+    with open(testfile, 'r') as file:
+        queries = file.readlines()
+    return queries
+
+def write_file(outputs, path_to_output):
+
+    with open(path_to_output, 'w') as file:
+        for output in outputs:
+            for line in output:
+                file.write(line.strip() + '\n')
+            file.write('\n')
 
 def main():
 
