@@ -7,11 +7,13 @@ import pickle
 import porter as ps
 import time
 import math
+from heapq import nlargest
+import csv
+import ast
 #from lib/stemming import porter as ps
 
 stop_words = set(stopwords.words('english'))
 tokenizer = RegexpTokenizer(r'\w+')
-#ps = PorterStemmer()
 
 InvIndex = {}
 Page_ID_Title = {}
@@ -23,8 +25,21 @@ def LoadIndex(path_to_index_folder):
     global Page_ID_Title
     global No_Docs
 
-    with open(path_to_index_folder+"/index.pkl", 'rb') as file:
-        InvIndex = pickle.load(file)
+    # with open(path_to_index_folder+"/index.pkl", 'rb') as file:
+    #     InvIndex = pickle.load(file)
+
+    # with open(path_to_index_folder+"/index.csv") as csv_file:
+    #     csv_reader = csv.reader(csv_file, delimiter=',')
+    #     for row in csv_reader:
+    #         InvIndex[row[0]] = ast.literal_eval(row[1])
+
+    with open(path_to_index_folder+"/index.txt") as file:
+
+        for line in file:
+            line_tokens = line.split("=")
+            index_key = line_tokens[0].strip()
+            index_val = line_tokens[1]
+            InvIndex[index_key] = ast.literal_eval(index_val)
 
     with open(path_to_index_folder+"/title_id.pkl", 'rb') as file:
         Page_ID_Title = pickle.load(file)
@@ -64,26 +79,24 @@ def Find_PostingList(token, field="all", IDF=0):
         token_entry = InvIndex[token]
 
         for docID in token_entry.keys():
-            Normalized_tf = 0
+
             tf = 0
             if field=="all" :
-                #Normalized_tf = token_entry[docID]['s']
-                tf = token_entry[docID]['s']
+                for field_key in token_entry[docID] :
+                    tf += token_entry[docID][field_key]
+                tf /= Page_ID_Title[docID][1]
             else:
                 if field in token_entry[docID].keys():
-                    #Normalized_tf = token_entry[docID][field]
                     tf = token_entry[docID][field]
 
             DF = len(token_entry.keys())
             IDF = No_Docs/DF
             Log_IDF = math.log(IDF,10)
 
-            #tf_idf = Normalized_tf*Log_IDF
             Log_TF = math.log(tf+1, 10)
             tf_idf = Log_TF*Log_IDF
 
             if IDF==0:
-                #PostingList[docID] = Normalized_tfs
                 PostingList[docID] = tf
             else:
                 PostingList[docID] = tf_idf
@@ -112,14 +125,18 @@ def Search_Pages(query_tokens, fields=[]):
                 Doc_Occurence[docID][1] = Doc_Occurence[docID][1] + Posting_List[docID]
                 Doc_Occurence[docID][0] = Doc_Occurence[docID][0] + 1
 
-    Doc_Occurence = sorted(Doc_Occurence.items(), key = lambda x: (x[1][0], x[1][1]), reverse=True)
+    # Doc_Occurence = sorted(Doc_Occurence.items(), key = lambda x: (x[1][0], x[1][1]), reverse=True)
+
     return Doc_Occurence
 
 def RelevantTitles(Doc_Occurence, TopN):
 
+    Top_Docs = nlargest(TopN, Doc_Occurence.items(), key = lambda x: (x[1][0], x[1][1]))
+
     TitleList = []
     for i in range(0, TopN, 1):
-        TitleList.append(Page_ID_Title[Doc_Occurence[i][0]])
+        # TitleList.append(Page_ID_Title[Doc_Occurence[i][0]][0])
+        TitleList.append(Page_ID_Title[Top_Docs[i][0]][0])
     return TitleList
 
 def search(path_to_index, queries):
@@ -160,6 +177,8 @@ def write_file(outputs, path_to_output):
 
 def main():
 
+    start = time.time()
+
     path_to_index = sys.argv[1]
     testfile = sys.argv[2]
     path_to_output = sys.argv[3]
@@ -170,6 +189,9 @@ def main():
     queries = read_file(testfile)
     outputs = search(path_to_index, queries)
     write_file(outputs, path_to_output)
+
+    end = time.time()
+    print("SEARCHING TIME: ", end-start)
 
 if __name__ == '__main__':
 
