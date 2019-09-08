@@ -8,6 +8,7 @@ import time
 import porter as ps
 import sys
 import csv
+from collections import OrderedDict
 
 ## Class object will store field wise tokens for one WikiPage
 class TokenObject():
@@ -33,10 +34,148 @@ InvIndex = {}
 ## Data Structure with mapping of PageID and PageTitle for search results
 Page_ID_Title = {}
 ## Threshold to dump index in file
-Mem_Threshold = 8192
+Mem_Threshold = 50000
+File_No = 0
+
+def CaseFolding():
+
+    for Tokenobj in TokenPages:
+        Tokenobj.title = [w.casefold() for w in Tokenobj.title]
+        Tokenobj.infobox = [w.casefold() for w in Tokenobj.infobox]
+        Tokenobj.category = [w.casefold() for w in Tokenobj.category]
+        Tokenobj.links = [w.casefold() for w in Tokenobj.links]
+        Tokenobj.ref = [w.casefold() for w in Tokenobj.ref]
+        Tokenobj.body = [w.casefold() for w in Tokenobj.body]
+
+        Tokenobj.infobox = [w for w in Tokenobj.infobox if w.isalpha() or w.isnumeric()]
+        Tokenobj.category = [w for w in Tokenobj.category if w.isalpha() or w.isnumeric()]
+        Tokenobj.links = [w for w in Tokenobj.links if w.isalpha() or w.isnumeric()]
+        Tokenobj.ref = [w for w in Tokenobj.ref if w.isalpha() or w.isnumeric()]
+        Tokenobj.body = [w for w in Tokenobj.body if w.isalpha() or w.isnumeric()]
+
+
+def StopWordRemoval():
+
+    infobox_stopwords = {'infobox'}
+    category_stopwords = {'category'}
+    links_stopwords = {'external links', 'http', 'www', 'com', 'edu', 'in', 'html'}
+    ref_stopwords = {'reflist','bibliography', 'http', 'www', 'com', 'edu', 'in', 'html'}
+    body_stopwords = {'redirect'}
+
+    ## Stopword removal, Numbers removal and case folding
+    for Tokenobj in TokenPages:
+        Tokenobj.title = [w for w in Tokenobj.title if w not in stop_words]
+        Tokenobj.infobox = [w for w in Tokenobj.infobox if w not in infobox_stopwords and w not in stop_words]
+        Tokenobj.category = [w for w in Tokenobj.category if w not in category_stopwords and w not in stop_words]
+        Tokenobj.links = [w for w in Tokenobj.links if w not in links_stopwords and w not in stop_words and w.isalpha()]
+        Tokenobj.ref = [w for w in Tokenobj.ref if w not in ref_stopwords and w not in stop_words and w.isalpha()]
+        Tokenobj.body = [w for w in Tokenobj.body if w not in body_stopwords and w not in stop_words]
+
+def Stemming():
+
+    for Tokenobj in TokenPages:
+        Tokenobj.title = [ps.stem(w) for w in Tokenobj.title]
+        Tokenobj.infobox = [ps.stem(w) for w in Tokenobj.infobox]
+        Tokenobj.category = [ps.stem(w) for w in Tokenobj.category]
+        Tokenobj.links = [ps.stem(w) for w in Tokenobj.links]
+        Tokenobj.ref = [ps.stem(w) for w in Tokenobj.ref]
+        Tokenobj.body = [ps.stem(w) for w in Tokenobj.body]
+
+def Check_Index(word, doc_id):
+
+    if word not in InvIndex.keys():
+        InvIndex[word] = {}
+    if doc_id not in InvIndex[word].keys():
+        InvIndex[word][doc_id] = {}
+
+def Create_Index():
+    global InvIndex
+
+    for TokenObj in TokenPages:
+
+        Doc_words = 0
+
+        for w in TokenObj.title:
+            Check_Index(w, TokenObj.id)
+            Doc_words += 1
+            if 't' not in InvIndex[w][TokenObj.id].keys():
+                InvIndex[w][TokenObj.id]['t'] = 1
+            else:
+                InvIndex[w][TokenObj.id]['t'] = InvIndex[w][TokenObj.id]['t'] + 1
+
+        for w in TokenObj.infobox:
+            Check_Index(w, TokenObj.id)
+            Doc_words += 1
+            if 'i' not in InvIndex[w][TokenObj.id].keys():
+                InvIndex[w][TokenObj.id]['i'] = 1
+            else:
+                InvIndex[w][TokenObj.id]['i'] = InvIndex[w][TokenObj.id]['i'] + 1
+
+        for w in TokenObj.category:
+            Check_Index(w, TokenObj.id)
+            Doc_words += 1
+            if 'c' not in InvIndex[w][TokenObj.id].keys():
+                InvIndex[w][TokenObj.id]['c'] = 1
+            else:
+                InvIndex[w][TokenObj.id]['c'] = InvIndex[w][TokenObj.id]['c'] + 1
+
+        for w in TokenObj.links:
+            Check_Index(w, TokenObj.id)
+            Doc_words += 1
+            if 'l' not in InvIndex[w][TokenObj.id].keys():
+                InvIndex[w][TokenObj.id]['l'] = 1
+            else:
+                InvIndex[w][TokenObj.id]['l'] = InvIndex[w][TokenObj.id]['l'] + 1
+
+        for w in TokenObj.ref:
+            Check_Index(w, TokenObj.id)
+            Doc_words += 1
+            if 'r' not in InvIndex[w][TokenObj.id].keys():
+                InvIndex[w][TokenObj.id]['r'] = 1
+            else:
+                InvIndex[w][TokenObj.id]['r'] = InvIndex[w][TokenObj.id]['r'] + 1
+
+        for w in TokenObj.body:
+            Check_Index(w, TokenObj.id)
+            Doc_words += 1
+            if 'b' not in InvIndex[w][TokenObj.id].keys():
+                InvIndex[w][TokenObj.id]['b'] = 1
+            else:
+                InvIndex[w][TokenObj.id]['b'] = InvIndex[w][TokenObj.id]['b'] + 1
+
+        Page_ID_Title[TokenObj.id] = (Page_ID_Title[TokenObj.id], Doc_words)
+
+def Store_Index(path_to_index_folder):
+
+    global File_No
+    File_No += 1
+
+    InvIndex_Sorted = sorted(InvIndex.items(), key=lambda x: x[0])
+
+    with open(path_to_index_folder+"/index"+str(File_No)+".txt", "w") as file:
+        for i in range(len(InvIndex_Sorted)):
+            file.write(str(InvIndex_Sorted[i][0]) + "=" + str(InvIndex_Sorted[i][1]) + "\n")
+
+def Store_Index_Metadata(path_to_index_folder):
+
+    with open(path_to_index_folder+"/title_id.pkl", "wb") as file:
+        pickle.dump(Page_ID_Title,file)
+
+def Check_Storage(path_to_index_folder):
+    global TokenPages
+    global InvIndex
+
+    if(sys.getsizeof(TokenPages)>=Mem_Threshold):
+        CaseFolding()
+        StopWordRemoval()
+        Stemming()
+        Create_Index()
+        Store_Index(path_to_index_folder)
+        TokenPages = []
+        InvIndex = {}
 
 ## Input : Filtered parsed data file
-def word_tokenizer(IPFilePath):
+def word_tokenizer(IPFilePath, path_to_index_folder):
 
     Tokenobj = TokenObject()
     PageID = 0
@@ -58,6 +197,8 @@ def word_tokenizer(IPFilePath):
 
             if line.startswith("Title Content: "):
                 ## If line is title line
+
+                Check_Storage(path_to_index_folder)
 
                 if len(Tokenobj.title) != 0:
                     ## If this is not first page, Tokenobj is not empty
@@ -159,158 +300,20 @@ def word_tokenizer(IPFilePath):
 
     TokenPages.append(Tokenobj)
 
-def CaseFolding():
-
-    for Tokenobj in TokenPages:
-        Tokenobj.title = [w.casefold() for w in Tokenobj.title]
-        Tokenobj.infobox = [w.casefold() for w in Tokenobj.infobox]
-        Tokenobj.category = [w.casefold() for w in Tokenobj.category]
-        Tokenobj.links = [w.casefold() for w in Tokenobj.links]
-        Tokenobj.ref = [w.casefold() for w in Tokenobj.ref]
-        Tokenobj.body = [w.casefold() for w in Tokenobj.body]
-
-        Tokenobj.infobox = [w for w in Tokenobj.infobox if w.isalpha() or w.isnumeric()]
-        Tokenobj.category = [w for w in Tokenobj.category if w.isalpha() or w.isnumeric()]
-        Tokenobj.links = [w for w in Tokenobj.links if w.isalpha() or w.isnumeric()]
-        Tokenobj.ref = [w for w in Tokenobj.ref if w.isalpha() or w.isnumeric()]
-        Tokenobj.body = [w for w in Tokenobj.body if w.isalpha() or w.isnumeric()]
-
-
-def StopWordRemoval():
-
-    infobox_stopwords = {'infobox'}
-    category_stopwords = {'category'}
-    links_stopwords = {'external links', 'http', 'www', 'com', 'edu', 'in', 'html'}
-    ref_stopwords = {'reflist','bibliography', 'http', 'www', 'com', 'edu', 'in', 'html'}
-    body_stopwords = {'redirect'}
-
-    ## Stopword removal, Numbers removal and case folding
-    for Tokenobj in TokenPages:
-        Tokenobj.title = [w for w in Tokenobj.title if w not in stop_words]
-        Tokenobj.infobox = [w for w in Tokenobj.infobox if w not in infobox_stopwords and w not in stop_words]
-        Tokenobj.category = [w for w in Tokenobj.category if w not in category_stopwords and w not in stop_words]
-        Tokenobj.links = [w for w in Tokenobj.links if w not in links_stopwords and w not in stop_words and w.isalpha()]
-        Tokenobj.ref = [w for w in Tokenobj.ref if w not in ref_stopwords and w not in stop_words and w.isalpha()]
-        Tokenobj.body = [w for w in Tokenobj.body if w not in body_stopwords and w not in stop_words]
-
-def Stemming():
-
-    for Tokenobj in TokenPages:
-        Tokenobj.title = [ps.stem(w) for w in Tokenobj.title]
-        Tokenobj.infobox = [ps.stem(w) for w in Tokenobj.infobox]
-        Tokenobj.category = [ps.stem(w) for w in Tokenobj.category]
-        Tokenobj.links = [ps.stem(w) for w in Tokenobj.links]
-        Tokenobj.ref = [ps.stem(w) for w in Tokenobj.ref]
-        Tokenobj.body = [ps.stem(w) for w in Tokenobj.body]
-
-def Check_Index(word, doc_id):
-
-    if word not in InvIndex.keys():
-        InvIndex[word] = {}
-    if doc_id not in InvIndex[word].keys():
-        InvIndex[word][doc_id] = {}
-
-def Create_Index():
-
-    for TokenObj in TokenPages:
-
-        Doc_words = 0
-
-        for w in TokenObj.title:
-            Check_Index(w, TokenObj.id)
-            Doc_words += 1
-            if 't' not in InvIndex[w][TokenObj.id].keys():
-                InvIndex[w][TokenObj.id]['t'] = 1
-            else:
-                InvIndex[w][TokenObj.id]['t'] = InvIndex[w][TokenObj.id]['t'] + 1
-
-        for w in TokenObj.infobox:
-            Check_Index(w, TokenObj.id)
-            Doc_words += 1
-            if 'i' not in InvIndex[w][TokenObj.id].keys():
-                InvIndex[w][TokenObj.id]['i'] = 1
-            else:
-                InvIndex[w][TokenObj.id]['i'] = InvIndex[w][TokenObj.id]['i'] + 1
-
-        for w in TokenObj.category:
-            Check_Index(w, TokenObj.id)
-            Doc_words += 1
-            if 'c' not in InvIndex[w][TokenObj.id].keys():
-                InvIndex[w][TokenObj.id]['c'] = 1
-            else:
-                InvIndex[w][TokenObj.id]['c'] = InvIndex[w][TokenObj.id]['c'] + 1
-
-        for w in TokenObj.links:
-            Check_Index(w, TokenObj.id)
-            Doc_words += 1
-            if 'l' not in InvIndex[w][TokenObj.id].keys():
-                InvIndex[w][TokenObj.id]['l'] = 1
-            else:
-                InvIndex[w][TokenObj.id]['l'] = InvIndex[w][TokenObj.id]['l'] + 1
-
-        for w in TokenObj.ref:
-            Check_Index(w, TokenObj.id)
-            Doc_words += 1
-            if 'r' not in InvIndex[w][TokenObj.id].keys():
-                InvIndex[w][TokenObj.id]['r'] = 1
-            else:
-                InvIndex[w][TokenObj.id]['r'] = InvIndex[w][TokenObj.id]['r'] + 1
-
-        for w in TokenObj.body:
-            Check_Index(w, TokenObj.id)
-            Doc_words += 1
-            if 'b' not in InvIndex[w][TokenObj.id].keys():
-                InvIndex[w][TokenObj.id]['b'] = 1
-            else:
-                InvIndex[w][TokenObj.id]['b'] = InvIndex[w][TokenObj.id]['b'] + 1
-
-        Page_ID_Title[TokenObj.id] = (Page_ID_Title[TokenObj.id], Doc_words)
-
-def Store_Index(path_to_index_folder):
-
-    if not os.path.exists(path_to_index_folder):
-        os.makedirs(path_to_index_folder)
-
-    # with open(path_to_index_folder+"/index.csv", "w") as file:
-    #     w = csv.writer(file)
-    #     for key, val in InvIndex.items():
-    #         w.writerow([key, str(val)])
-
-    with open(path_to_index_folder+"/index.txt", "w") as file:
-        for key in InvIndex.keys():
-            file.write(key + "=" + str(InvIndex[key]) + "\n")
-
-    # with open(path_to_index_folder+"/title_id.csv", "w") as file:
-    #     w = csv.writer(file)
-    #     for key, val in InvIndex.items():
-    #         w.writerow([key, str(val)])
-
-    # with open(path_to_index_folder+"/index.pkl", "wb") as file:
-    #     pickle.dump(InvIndex,file)
-
-    with open(path_to_index_folder+"/title_id.pkl", "wb") as file:
-        pickle.dump(Page_ID_Title,file)
-
 if __name__ == "__main__":
 
     start = time.time()
 
-    word_tokenizer("./Phase_1_Result.xml")
-    print("TOKENIZATION ", time.time()-start)
+    if not os.path.exists(sys.argv[1]):
+        os.makedirs(sys.argv[1])
 
+    word_tokenizer("./Phase_1_Result.xml", sys.argv[1])
     CaseFolding()
     StopWordRemoval()
-    print("CASEFOLDING AND STOP WORD REMOVAL ", time.time()-start)
-
     Stemming()
-    print("STEMMING ", time.time()-start)
-
     Create_Index()
-    print("INDEX CREATION ", time.time()-start)
-    print("INDEX DATA STRUCTURE SIZE: ", sys.getsizeof(InvIndex))
-    print("DS SIZE: ", time.time()-start)
-
     Store_Index(sys.argv[1])
+    Store_Index_Metadata(sys.argv[1])
 
     if os.path.exists("./Phase_1_Result.xml"):
         os.remove("./Phase_1_Result.xml")
