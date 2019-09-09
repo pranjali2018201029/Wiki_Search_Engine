@@ -3,6 +3,7 @@ import pickle
 import time
 import ast
 import json
+import copy
 
 ## Global variables
 
@@ -82,7 +83,7 @@ def Merge_Terms(Duplicate_Entry):
 
     global Output_Buffer
     OP_Buffer_Entry = Output_Buffer[Duplicate_Entry.Term]
-    Merged_Entry = OP_Buffer_Entry
+    Merged_Entry = copy.deepcopy(OP_Buffer_Entry)
 
     for DocID in Duplicate_Entry.PostingList.keys():
         if DocID in Merged_Entry.keys():
@@ -93,16 +94,13 @@ def Merge_Terms(Duplicate_Entry):
                     Merged_Entry[DocID][key] = Duplicate_Entry.PostingList[DocID][key]
         else:
             Merged_Entry[DocID] = Duplicate_Entry.PostingList[DocID]
-    Output_Buffer[Duplicate_Entry.Term] = Merged_Entry
+    Output_Buffer[Duplicate_Entry.Term] = copy.deepcopy(Merged_Entry)
 
 ## Flush output_buffer
 def Flush_OutputBuffer(path_to_index_folder, Last_Min_Element):
     global Output_File_No
     global Secondary_Index
     global Output_Buffer
-
-    # print("FLUSING OUTPUT BUFFER")
-    # print(Output_Buffer)
 
     Output_File_No += 1
     Secondary_Index[Last_Min_Element.Term] = Output_File_No
@@ -123,6 +121,18 @@ def Store_Secondary_Index(path_to_index_folder):
 
     print("SECONDARY INDEX: ", Secondary_Index)
 
+def Read_File_Entry(Current_FileHandler):
+    line = Current_FileHandler.readline()
+    if len(line) == 0:
+        index_key = "zzzzzz"
+        index_val = {}
+    else:
+        line_tokens = line.split("=")
+        index_key = line_tokens[0].strip()
+        index_val = ast.literal_eval(line_tokens[1])
+
+    return HeapNode(index_key, index_val, Current_FileHandler)
+
 ## Merge Method (Create list of heapnodes, k-way merge algo)
 def Merge_Index(path_to_index_folder):
 
@@ -142,7 +152,7 @@ def Merge_Index(path_to_index_folder):
 
             HeapNode_Obj = HeapNode(index_key, index_val, file_pointer)
         else :
-            HeapNode_Obj = HeapNode(sys.maxint, {}, None)
+            HeapNode_Obj = HeapNode("zzzzzz", {}, None)
         HeapNodes.append(HeapNode_Obj)
 
     # Create Min-heap og HeapNode objects
@@ -153,38 +163,35 @@ def Merge_Index(path_to_index_folder):
     Last_Min_Element = HeapNodes[0]
     while True:
         Min_Element = HeapNodes[0]
+        Current_FileHandler = Min_Element.FilePointer
 
         if Min_Element.Term == "zzzzzz":
             break
 
-        if Min_Element.Term in Output_Buffer.keys():
+        while Min_Element.Term in Output_Buffer.keys():
             Merge_Terms(Min_Element)
+            HeapNodes[0] = Read_File_Entry(Current_FileHandler)
+            HeapNodes = Min_Heapify(HeapNodes, len(HeapNodes), 0)
+            Min_Element = HeapNodes[0]
+            Current_FileHandler = Min_Element.FilePointer
+            Last_Min_Element = Min_Element
+
+        Output_Buffer[Min_Element.Term] = Min_Element.PostingList
 
         if sys.getsizeof(Output_Buffer) >= Output_Threshold:
             Flush_OutputBuffer(path_to_index_folder, Last_Min_Element)
 
-        Output_Buffer[Min_Element.Term] = Min_Element.PostingList
-
-        Current_FileHandler = Min_Element.FilePointer
-        line = Current_FileHandler.readline()
-        if len(line) == 0:
-            index_key = "zzzzzz"
-            index_val = {}
-        else:
-            line_tokens = line.split("=")
-            index_key = line_tokens[0].strip()
-            index_val = ast.literal_eval(line_tokens[1])
-
-        HeapNodes[0] = HeapNode(index_key, index_val, Current_FileHandler)
+        HeapNodes[0] = Read_File_Entry(Current_FileHandler)
         HeapNodes = Min_Heapify(HeapNodes, len(HeapNodes), 0)
         Last_Min_Element = Min_Element
 
-    Flush_OutputBuffer(path_to_index_folder, Last_Min_Element)
+    if len(Output_Buffer) > 0:
+        Flush_OutputBuffer(path_to_index_folder, Last_Min_Element)
 
 if __name__ == "__main__":
 
     start = time.time()
-    No_Split_Files = 5
+    No_Split_Files = 3
     Merge_Index("/Users/pranjali/Documents/Wiki_Search_Engine/Index")
     Store_Secondary_Index("/Users/pranjali/Documents/Wiki_Search_Engine/Index")
     end = time.time()
