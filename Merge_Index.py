@@ -82,15 +82,17 @@ def Merge_Terms(Duplicate_Entry):
 
     global Output_Buffer
     OP_Buffer_Entry = Output_Buffer[Duplicate_Entry.Term]
-    Merged_Entry = {}
+    Merged_Entry = OP_Buffer_Entry
 
-    for DocID in OP_Buffer_Entry.keys():
-        if DocID in Duplicate_Entry.PostingList.keys():
-            Merged_Entry[DocID] = {}
-            for key in OP_Buffer_Entry[DocID]:
-                if key in Duplicate_Entry.PostingList[DocID]:
-                    Merged_Entry[DocID][key] = OP_Buffer_Entry[DocID][key] + Duplicate_Entry.PostingList[DocID][key]
-
+    for DocID in Duplicate_Entry.PostingList.keys():
+        if DocID in Merged_Entry.keys():
+            for key in Duplicate_Entry.PostingList[DocID]:
+                if key in Merged_Entry[DocID]:
+                    Merged_Entry[DocID][key] += Duplicate_Entry.PostingList[DocID][key]
+                else:
+                    Merged_Entry[DocID][key] = Duplicate_Entry.PostingList[DocID][key]
+        else:
+            Merged_Entry[DocID] = Duplicate_Entry.PostingList[DocID]
     Output_Buffer[Duplicate_Entry.Term] = Merged_Entry
 
 ## Flush output_buffer
