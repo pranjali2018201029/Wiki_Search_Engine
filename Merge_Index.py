@@ -191,7 +191,8 @@ def Merge_Index(path_to_index_folder):
 if __name__ == "__main__":
 
     start = time.time()
-    No_Split_Files = 3
+    # No_Split_Files = 3
+    Load_PriIndex_Metadata("/Users/pranjali/Documents/Wiki_Search_Engine/Index")
     Merge_Index("/Users/pranjali/Documents/Wiki_Search_Engine/Index")
     Store_Secondary_Index("/Users/pranjali/Documents/Wiki_Search_Engine/Index")
     end = time.time()

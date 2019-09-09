@@ -68,5 +68,10 @@ class WikiContenthandler(xml.sax.ContentHandler):
 
 if __name__ == "__main__":
 
+    start = time.time()
+
     source = open(sys.argv[1])
     xml.sax.parse(source, WikiContenthandler())
+
+    end = time.time()
+    print("PARSING TIME: ", end-start)

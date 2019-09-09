@@ -10,6 +10,7 @@ import math
 from heapq import nlargest
 import csv
 import ast
+import json
 #from lib/stemming import porter as ps
 
 stop_words = set(stopwords.words('english'))
@@ -17,33 +18,55 @@ tokenizer = RegexpTokenizer(r'\w+')
 
 InvIndex = {}
 Page_ID_Title = {}
+Secondary_Index = {}
+Secondary_Index_List = []
 
 No_Docs = 0
+No_Index_Files = 0
 
-def LoadIndex(path_to_index_folder):
+def Load_Metadata(path_to_index_folder):
     global InvIndex
     global Page_ID_Title
     global No_Docs
+    global No_Index_Files
+    global Secondary_Index
+    global Secondary_Index_List
 
-    # with open(path_to_index_folder+"/index.pkl", 'rb') as file:
-    #     InvIndex = pickle.load(file)
-
-    # with open(path_to_index_folder+"/index.csv") as csv_file:
-    #     csv_reader = csv.reader(csv_file, delimiter=',')
-    #     for row in csv_reader:
-    #         InvIndex[row[0]] = ast.literal_eval(row[1])
-
-    with open(path_to_index_folder+"/index.txt") as file:
-
-        for line in file:
-            line_tokens = line.split("=")
-            index_key = line_tokens[0].strip()
-            index_val = line_tokens[1]
-            InvIndex[index_key] = ast.literal_eval(index_val)
+    with open(path_to_index_folder+"/secondary_index.pkl", "rb") as Sec_Index:
+        Secondary_Index = pickle.load(Sec_Index)
+        No_Index_Files = len(Secondary_Index)
+        Secondary_Index_List = list(Secondary_Index.keys())
 
     with open(path_to_index_folder+"/title_id.pkl", 'rb') as file:
         Page_ID_Title = pickle.load(file)
         No_Docs = len(Page_ID_Title)
+
+def Load_Index(path_to_index_folder, Index_File_No):
+    global InvIndex
+    with open(path_to_index_folder+"/MergedIndex"+str(Index_File_No)+".json", "r") as jsonfile:
+        InvIndex = json.load(jsonfile)
+
+def Binary_Search (l, r, Query_Term):
+
+    if(Secondary_Index_List[l]>Query_Term):
+        return l
+
+    if r >= l:
+        mid = l + int((r - l)/2)
+        if Secondary_Index_List[mid] > Query_Term and Secondary_Index_List[mid-1] < Query_Term:
+            return mid
+        elif Secondary_Index_List[mid] > Query_Term:
+            return Binary_Search(l, mid-1, Query_Term)
+        else:
+            return Binary_Search(mid + 1, r, Query_Term)
+    else:
+        return -1
+
+def Find_Index_File(Query_Term):
+    key_index = Binary_Search(0, No_Index_Files, Query_Term)
+    key = Secondary_Index_List[key_index]
+    File_Num = Secondary_Index[str(key)]
+    return File_Num
 
 def Query_processing(query):
 
@@ -71,9 +94,12 @@ def Field_Query_Processing(query):
 
     return query_tokens, fields
 
-def Find_PostingList(token, field="all", IDF=0):
+def Find_PostingList(path_to_index_folder, token, field="all", IDF=0):
 
     PostingList = {}
+
+    File_Num = Find_Index_File(token)
+    Load_Index(path_to_index_folder, File_Num)
 
     if token in InvIndex.keys():
         token_entry = InvIndex[token]
@@ -103,7 +129,7 @@ def Find_PostingList(token, field="all", IDF=0):
 
     return PostingList
 
-def Search_Pages(query_tokens, fields=[]):
+def Search_Pages(path_to_index_folder, query_tokens, fields=[]):
 
     ## Dict DocID: [Intersections, Occurences]
     Doc_Occurence = {}
@@ -115,7 +141,7 @@ def Search_Pages(query_tokens, fields=[]):
             field = "all"
         else:
             field = fields[i]
-        Posting_List = Find_PostingList(token, field, len(query_tokens)-1)
+        Posting_List = Find_PostingList(path_to_index_folder, token, field, len(query_tokens)-1)
 
         for docID in Posting_List.keys():
 
@@ -156,7 +182,7 @@ def search(path_to_index, queries):
             print(query_tokens)
             print("FIELDS")
             print(fields)
-        Doc_Occurence = Search_Pages(query_tokens, fields)
+        Doc_Occurence = Search_Pages(path_to_index, query_tokens, fields)
         TitleList = RelevantTitles(Doc_Occurence, 10)
         outputs.append(TitleList)
     return outputs
@@ -184,7 +210,7 @@ def main():
     path_to_output = sys.argv[3]
 
     ## Load Index and Title_ID mapping in Data Structures
-    LoadIndex(path_to_index)
+    Load_Metadata(path_to_index)
 
     queries = read_file(testfile)
     outputs = search(path_to_index, queries)

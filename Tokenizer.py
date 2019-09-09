@@ -36,6 +36,7 @@ Page_ID_Title = {}
 ## Threshold to dump index in file
 Mem_Threshold = 50000
 File_No = 0
+Metadata = {}
 
 def CaseFolding():
 
@@ -143,7 +144,7 @@ def Create_Index():
             else:
                 InvIndex[w][TokenObj.id]['b'] = InvIndex[w][TokenObj.id]['b'] + 1
 
-        Page_ID_Title[TokenObj.id] = (Page_ID_Title[TokenObj.id], Doc_words)
+        Page_ID_Title[str(TokenObj.id)] = (Page_ID_Title[str(TokenObj.id)], Doc_words)
 
 def Store_Index(path_to_index_folder):
 
@@ -157,9 +158,14 @@ def Store_Index(path_to_index_folder):
             file.write(str(InvIndex_Sorted[i][0]) + "=" + str(InvIndex_Sorted[i][1]) + "\n")
 
 def Store_Index_Metadata(path_to_index_folder):
+    global Metadata
+    Metadata["No_Files"] = File_No
 
     with open(path_to_index_folder+"/title_id.pkl", "wb") as file:
         pickle.dump(Page_ID_Title,file)
+
+    with open(path_to_index_folder+"/metadata.pkl", "wb") as file:
+        pickle.dump(Metadata,file)
 
 def Check_Storage(path_to_index_folder):
     global TokenPages
@@ -230,7 +236,7 @@ def word_tokenizer(IPFilePath, path_to_index_folder):
                 ## Continue reading next line after processing for this title line
                 PageID = PageID + 1
                 Tokenobj.id = PageID
-                Page_ID_Title[PageID] = line[15:]
+                Page_ID_Title[str(PageID)] = line[15:]
                 Tokenobj.title = tokenizer.tokenize(line[15:])
                 continue
 
