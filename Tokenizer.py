@@ -144,7 +144,7 @@ def Create_Index():
             else:
                 InvIndex[w][TokenObj.id]['b'] = InvIndex[w][TokenObj.id]['b'] + 1
 
-        Page_ID_Title[str(TokenObj.id)] = (Page_ID_Title[str(TokenObj.id)], Doc_words)
+        Page_ID_Title[TokenObj.id] = (Page_ID_Title[TokenObj.id], Doc_words)
 
 def Store_Index(path_to_index_folder):
 
@@ -236,7 +236,7 @@ def word_tokenizer(IPFilePath, path_to_index_folder):
                 ## Continue reading next line after processing for this title line
                 PageID = PageID + 1
                 Tokenobj.id = PageID
-                Page_ID_Title[str(PageID)] = line[15:]
+                Page_ID_Title[PageID] = line[15:]
                 Tokenobj.title = tokenizer.tokenize(line[15:])
                 continue
 

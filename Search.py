@@ -1,17 +1,14 @@
 from nltk.tokenize import word_tokenize
 from nltk.tokenize import RegexpTokenizer
 from nltk.corpus import stopwords
-# from nltk.stem import PorterStemmer
 import sys
 import pickle
 import porter as ps
 import time
 import math
 from heapq import nlargest
-import csv
 import ast
 import json
-#from lib/stemming import porter as ps
 
 stop_words = set(stopwords.words('english'))
 tokenizer = RegexpTokenizer(r'\w+')
@@ -43,8 +40,8 @@ def Load_Metadata(path_to_index_folder):
 
 def Load_Index(path_to_index_folder, Index_File_No):
     global InvIndex
-    with open(path_to_index_folder+"/MergedIndex"+str(Index_File_No)+".json", "r") as jsonfile:
-        InvIndex = json.load(jsonfile)
+    with open(path_to_index_folder+"/MergedIndex"+str(Index_File_No)+".pkl", "rb") as file:
+        InvIndex = pickle.load(file)
 
 def Binary_Search (l, r, Query_Term):
 
@@ -151,8 +148,6 @@ def Search_Pages(path_to_index_folder, query_tokens, fields=[]):
                 Doc_Occurence[docID][1] = Doc_Occurence[docID][1] + Posting_List[docID]
                 Doc_Occurence[docID][0] = Doc_Occurence[docID][0] + 1
 
-    # Doc_Occurence = sorted(Doc_Occurence.items(), key = lambda x: (x[1][0], x[1][1]), reverse=True)
-
     return Doc_Occurence
 
 def RelevantTitles(Doc_Occurence, TopN):
@@ -161,7 +156,6 @@ def RelevantTitles(Doc_Occurence, TopN):
 
     TitleList = []
     for i in range(0, TopN, 1):
-        # TitleList.append(Page_ID_Title[Doc_Occurence[i][0]][0])
         TitleList.append(Page_ID_Title[Top_Docs[i][0]][0])
     return TitleList
 

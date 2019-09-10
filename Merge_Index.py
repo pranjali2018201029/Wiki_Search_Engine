@@ -4,6 +4,7 @@ import time
 import ast
 import json
 import copy
+import os
 
 ## Global variables
 
@@ -35,18 +36,14 @@ def Min_Heapify(arr, n, i):
     left = 2*i + 1
     right = 2*i + 2
 
-    # See if left child of root exists and is greater than root
     if left < n and arr[left].Term < arr[i].Term:
         smallest = left
 
-    # See if right child of root exists and is greater than root
     if right < n and  arr[right].Term < arr[smallest].Term:
         smallest = right
 
-    # Change root, if needed
     if smallest != i:
         (arr[i],arr[smallest]) = (arr[smallest],arr[i])
-        # Heapify the root.
         arr = Min_Heapify(arr, n, smallest)
     return arr
 
@@ -90,8 +87,8 @@ def Flush_OutputBuffer(path_to_index_folder, Last_Min_Element):
     # with open(path_to_index_folder+"/MergedIndex"+str(Output_File_No)+".pkl", "wb") as file:
     #     pickle.dump(Output_Buffer,file)
 
-    with open(path_to_index_folder+"/MergedIndex"+str(Output_File_No)+".json", "w") as jsonfile:
-        json.dump(Output_Buffer,jsonfile)
+    with open(path_to_index_folder+"/MergedIndex"+str(Output_File_No)+".pkl", "wb") as file:
+        pickle.dump(Output_Buffer,file)
     Output_Buffer = {}
 
 ## Store secondary index in file (which file no contains primary index till which word)
@@ -170,13 +167,20 @@ def Merge_Index(path_to_index_folder):
     if len(Output_Buffer) > 0:
         Flush_OutputBuffer(path_to_index_folder, Last_Min_Element)
 
+def Remove_Old_Index(path_to_index_folder):
+
+    for file_no in range(No_Split_Files):
+        os.remove(path_to_index_folder+"/index"+str(file_no+1)+".txt")
+
+    os.remove(path_to_index_folder+"/metadata.pkl")
+
 if __name__ == "__main__":
 
     start = time.time()
-    # No_Split_Files = 3
-    Load_PriIndex_Metadata("/Users/pranjali/Documents/Wiki_Search_Engine/Index")
-    Merge_Index("/Users/pranjali/Documents/Wiki_Search_Engine/Index")
-    Store_Secondary_Index("/Users/pranjali/Documents/Wiki_Search_Engine/Index")
+    Load_PriIndex_Metadata(sys.argv[1])
+    Merge_Index(sys.argv[1])
+    Store_Secondary_Index(sys.argv[1])
+    Remove_Old_Index(sys.argv[1])
     end = time.time()
 
     print("MERGE INDEX TIME: ", end - start)
