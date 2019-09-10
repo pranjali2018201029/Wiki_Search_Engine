@@ -78,24 +78,6 @@ def Laod_Split_Files(path_to_index_folder):
         file_pointer = open(path_to_index_folder+"/index"+str(file_no+1)+".txt", "r")
         File_Pointer_Arr.append(file_pointer)
 
-## Merge multiple key entries to single entry
-def Merge_Terms(Duplicate_Entry):
-
-    global Output_Buffer
-    OP_Buffer_Entry = Output_Buffer[Duplicate_Entry.Term]
-    Merged_Entry = copy.deepcopy(OP_Buffer_Entry)
-
-    for DocID in Duplicate_Entry.PostingList.keys():
-        if DocID in Merged_Entry.keys():
-            for key in Duplicate_Entry.PostingList[DocID]:
-                if key in Merged_Entry[DocID]:
-                    Merged_Entry[DocID][key] += Duplicate_Entry.PostingList[DocID][key]
-                else:
-                    Merged_Entry[DocID][key] = Duplicate_Entry.PostingList[DocID][key]
-        else:
-            Merged_Entry[DocID] = Duplicate_Entry.PostingList[DocID]
-    Output_Buffer[Duplicate_Entry.Term] = copy.deepcopy(Merged_Entry)
-
 ## Flush output_buffer
 def Flush_OutputBuffer(path_to_index_folder, Last_Min_Element):
     global Output_File_No
@@ -169,7 +151,7 @@ def Merge_Index(path_to_index_folder):
             break
 
         while Min_Element.Term in Output_Buffer.keys():
-            Merge_Terms(Min_Element)
+            Output_Buffer[Min_Element.Term].update(Min_Element.PostingList)
             HeapNodes[0] = Read_File_Entry(Current_FileHandler)
             HeapNodes = Min_Heapify(HeapNodes, len(HeapNodes), 0)
             Min_Element = HeapNodes[0]
