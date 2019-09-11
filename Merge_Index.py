@@ -155,10 +155,10 @@ def Merge_Index(path_to_index_folder):
             Current_FileHandler = Min_Element.FilePointer
             Last_Min_Element = Min_Element
 
-        Output_Buffer[Min_Element.Term] = Min_Element.PostingList
-
         if sys.getsizeof(Output_Buffer) >= Output_Threshold:
             Flush_OutputBuffer(path_to_index_folder, Last_Min_Element)
+
+        Output_Buffer[Min_Element.Term] = Min_Element.PostingList
 
         HeapNodes[0] = Read_File_Entry(Current_FileHandler)
         HeapNodes = Min_Heapify(HeapNodes, len(HeapNodes), 0)

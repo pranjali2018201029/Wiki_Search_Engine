@@ -107,7 +107,7 @@ def Find_PostingList(path_to_index_folder, token, field="all", IDF=0):
             if field=="all" :
                 for field_key in token_entry[docID] :
                     tf += token_entry[docID][field_key]
-                tf /= Page_ID_Title[docID][1]
+                # tf /= Page_ID_Title[docID][1]
             else:
                 if field in token_entry[docID].keys():
                     tf = token_entry[docID][field]
@@ -156,7 +156,7 @@ def RelevantTitles(Doc_Occurence, TopN):
 
     TitleList = []
     for i in range(0, TopN, 1):
-        TitleList.append(Page_ID_Title[Top_Docs[i][0]][0])
+        TitleList.append(Page_ID_Title[Top_Docs[i][0]])
     return TitleList
 
 def search(path_to_index, queries):

@@ -144,7 +144,7 @@ def Create_Index():
             else:
                 InvIndex[w][TokenObj.id]['b'] = InvIndex[w][TokenObj.id]['b'] + 1
 
-        Page_ID_Title[TokenObj.id] = (Page_ID_Title[TokenObj.id], Doc_words)
+        # Page_ID_Title[TokenObj.id] = (Page_ID_Title[TokenObj.id], Doc_words)
 
 def Store_Index(path_to_index_folder):
 
