@@ -34,7 +34,7 @@ InvIndex = {}
 ## Data Structure with mapping of PageID and PageTitle for search results
 Page_ID_Title = {}
 ## Threshold to dump index in file
-Mem_Threshold = 50000
+Mem_Threshold = 2000000
 File_No = 0
 Metadata = {}
 
@@ -199,8 +199,10 @@ def word_tokenizer(IPFilePath, path_to_index_folder):
 
     with open(IPFilePath, 'r') as f:
 
-        for line in f:
-
+        # for line in f:
+        line = "DummyLine"
+        while len(line)>0:
+            line = f.readline()
             if line.startswith("Title Content: "):
                 ## If line is title line
 
@@ -235,6 +237,10 @@ def word_tokenizer(IPFilePath, path_to_index_folder):
 
                 ## Continue reading next line after processing for this title line
                 PageID = PageID + 1
+
+                if(PageID%50000==0):
+                    print("TOKENIZED: ", PageID)
+
                 Tokenobj.id = PageID
                 Page_ID_Title[PageID] = line[15:]
                 Tokenobj.title = tokenizer.tokenize(line[15:])

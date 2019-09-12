@@ -4,6 +4,7 @@ from xml.sax.saxutils import XMLFilterBase, XMLGenerator
 import time
 import sys
 import re
+import bz2
 
 ## Remove URL from the text
 URL_RegEx = re.compile(r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+',re.DOTALL)
@@ -11,6 +12,8 @@ URL_RegEx = re.compile(r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0
 CSS_RegEx = re.compile(r'&lt.*&gt;', re.DOTALL)
 ## Remove html tags
 Tags_RegEx = re.compile(r'<(.*?)>',re.DOTALL)
+
+DOC_No = 0
 
 class WikiContenthandler(xml.sax.ContentHandler):
 
@@ -36,6 +39,7 @@ class WikiContenthandler(xml.sax.ContentHandler):
             self.title_tag = True
 
     def endElement(self, name):
+        global DOC_No
 
         if name == "title":
             self.title_tag = False
@@ -51,6 +55,10 @@ class WikiContenthandler(xml.sax.ContentHandler):
             self.ResultFile.write("Text Content: " + self.text + "\n")
             self.ResultFile.write("\n")
             self.text = ""
+
+            DOC_No += 1
+            if(DOC_No%50000==0):
+                print("PARSED: ", DOC_No)
 
     def characters(self, content):
 
@@ -70,7 +78,7 @@ if __name__ == "__main__":
 
     start = time.time()
 
-    source = open(sys.argv[1])
+    source = bz2.BZ2File(sys.argv[1], "rb")
     xml.sax.parse(source, WikiContenthandler())
 
     end = time.time()

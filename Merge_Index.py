@@ -178,6 +178,7 @@ if __name__ == "__main__":
 
     start = time.time()
     Load_PriIndex_Metadata(sys.argv[1])
+    # No_Split_Files = 2200
     Merge_Index(sys.argv[1])
     Store_Secondary_Index(sys.argv[1])
     Remove_Old_Index(sys.argv[1])

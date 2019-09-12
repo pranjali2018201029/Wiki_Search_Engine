@@ -78,12 +78,15 @@ def Field_Query_Processing(query):
 
     query_tokens = []
     fields = []
-    field_tokens = query.split()
 
-    for field_token in field_tokens:
-        tokens = field_token.split(':')
-        fields.append(tokens[0][0])
-        query_tokens.append(tokens[1])
+    tokens = query.split(',')
+    for token in tokens:
+        field_tokens = token.split(':')
+        field = field_tokens[0].strip()
+        value_tokens = field_tokens[1].split(" ")
+        for val in value_tokens:
+            fields.append(field)
+            query_tokens.append(val.strip())
 
     query_tokens = [w.casefold() for w in query_tokens]
     query_tokens = [w for w in query_tokens if w not in stop_words]
@@ -91,7 +94,7 @@ def Field_Query_Processing(query):
 
     return query_tokens, fields
 
-def Find_PostingList(path_to_index_folder, token, field="all", IDF=0):
+def Find_PostingList(path_to_index_folder, token, field="all"):
 
     PostingList = {}
 
@@ -101,27 +104,47 @@ def Find_PostingList(path_to_index_folder, token, field="all", IDF=0):
     if token in InvIndex.keys():
         token_entry = InvIndex[token]
 
-        for docID in token_entry.keys():
+        if field == "all":
 
-            tf = 0
-            if field=="all" :
+            DF = len(token_entry.keys())
+            if DF>0:
+                IDF = No_Docs/DF
+            else:
+                IDF = 1
+            Log_IDF = math.log(IDF,10)
+
+            for docID in token_entry.keys():
+
+                tf = 0
                 for field_key in token_entry[docID] :
                     tf += token_entry[docID][field_key]
                 # tf /= Page_ID_Title[docID][1]
-            else:
-                if field in token_entry[docID].keys():
-                    tf = token_entry[docID][field]
 
-            DF = len(token_entry.keys())
-            IDF = No_Docs/DF
+                Log_TF = math.log(tf+1, 10)
+                tf_idf = Log_TF*Log_IDF
+
+                PostingList[docID] = tf_idf
+
+        else:
+            Temp_List = {}
+            for docID in token_entry.keys():
+                if str(field[0]) in token_entry[docID].keys():
+                    Temp_List[docID] = token_entry[docID][str(field[0])]
+
+            DF = len(Temp_List.keys())
+            if DF>0:
+                IDF = No_Docs/DF
+            else:
+                IDF = 1
             Log_IDF = math.log(IDF,10)
 
-            Log_TF = math.log(tf+1, 10)
-            tf_idf = Log_TF*Log_IDF
+            tf = 0
+            for docID in Temp_List.keys():
+                tf = Temp_List[docID]
 
-            if IDF==0:
-                PostingList[docID] = tf
-            else:
+                Log_TF = math.log(tf+1, 10)
+                tf_idf = Log_TF*Log_IDF
+
                 PostingList[docID] = tf_idf
 
     return PostingList
@@ -138,7 +161,7 @@ def Search_Pages(path_to_index_folder, query_tokens, fields=[]):
             field = "all"
         else:
             field = fields[i]
-        Posting_List = Find_PostingList(path_to_index_folder, token, field, len(query_tokens)-1)
+        Posting_List = Find_PostingList(path_to_index_folder, token, field)
 
         for docID in Posting_List.keys():
 
@@ -155,49 +178,32 @@ def RelevantTitles(Doc_Occurence, TopN):
     Top_Docs = nlargest(TopN, Doc_Occurence.items(), key = lambda x: (x[1][0], x[1][1]))
 
     TitleList = []
-    for i in range(0, TopN, 1):
+    for i in range(0, len(Top_Docs), 1):
         TitleList.append(Page_ID_Title[Top_Docs[i][0]])
     return TitleList
 
-def search(path_to_index, queries):
-    outputs = []
+def search(path_to_index, query):
     field_query_flag = False
 
-    for query in queries:
-        if ':' in query:
-            query_tokens, fields = Field_Query_Processing(query)
-            print("QUERY TOKENS")
-            print(query_tokens)
-            print("FIELDS")
-            print(fields)
-        else:
-            query_tokens, fields = Query_processing(query)
-            print("QUERY TOKENS")
-            print(query_tokens)
-            print("FIELDS")
-            print(fields)
-        Doc_Occurence = Search_Pages(path_to_index, query_tokens, fields)
-        TitleList = RelevantTitles(Doc_Occurence, 10)
-        outputs.append(TitleList)
-    return outputs
+    if ':' in query:
+        query_tokens, fields = Field_Query_Processing(query)
+        print("QUERY TOKENS")
+        print(query_tokens)
+        print("FIELDS")
+        print(fields)
+    else:
+        query_tokens, fields = Query_processing(query)
+        print("QUERY TOKENS")
+        print(query_tokens)
+        print("FIELDS")
+        print(fields)
 
-def read_file(testfile):
+    Doc_Occurence = Search_Pages(path_to_index, query_tokens, fields)
+    TitleList = RelevantTitles(Doc_Occurence, 10)
 
-    with open(testfile, 'r') as file:
-        queries = file.readlines()
-    return queries
-
-def write_file(outputs, path_to_output):
-
-    with open(path_to_output, 'w') as file:
-        for output in outputs:
-            for line in output:
-                file.write(line.strip() + '\n')
-            file.write('\n')
+    return TitleList
 
 def main():
-
-    start = time.time()
 
     path_to_index = sys.argv[1]
     testfile = sys.argv[2]
@@ -206,12 +212,16 @@ def main():
     ## Load Index and Title_ID mapping in Data Structures
     Load_Metadata(path_to_index)
 
-    queries = read_file(testfile)
-    outputs = search(path_to_index, queries)
-    write_file(outputs, path_to_output)
-
-    end = time.time()
-    print("SEARCHING TIME: ", end-start)
+    Query_Input = "Y"
+    while Query_Input=="Y":
+        query = input("enter query: ")
+        start = time.time()
+        output = search(path_to_index, query)
+        end = time.time()
+        for line in output:
+            print(line)
+        print("SEARCHING TIME: ", end-start)
+        Query_Input = input("Y/N : ")
 
 if __name__ == '__main__':
 
